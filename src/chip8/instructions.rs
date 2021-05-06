@@ -17,20 +17,39 @@ pub fn decode_opcode(cpu: &mut CPU, opcode: u16) {
         }
     } else if let 0x1000 = code {
         println!("1NNN jmp to {}", opcode & 0x0FFF);
-        cpu.I = opcode & 0x0FFF;
-        cpu.pc += 2;
+        // cpu.I = opcode & 0x0FFF;
+        cpu.pc = opcode & 0x0FFF;
     } else if let 0x2000 = code {
         println!("2NNN call *({})()", opcode & 0x0FFF);
     } else if let 0x3000 = code {
         println!("3XNN if(V{} == {})", opcode & 0x0F00 >> 8, opcode & 0x00FF);
+        let x = (opcode & 0x0F00 >> 8) as usize;
+        if cpu.V[x] == (opcode & 0x00FF) as u8 {
+            cpu.pc += 4;
+        } else {
+            cpu.pc += 2;
+        }
     } else if let 0x4000 = code {
         println!("4XNN if(V{} != {})", opcode & 0x0F00 >> 8, opcode & 0x00FF);
+        let x = (opcode & 0x0F00 >> 8) as usize;
+        if cpu.V[x] != (opcode & 0x00FF) as u8 {
+            cpu.pc += 4;
+        } else {
+            cpu.pc += 2;
+        }
     } else if let 0x5000 = code {
         println!(
             "5XY0 if(V{} == V{})",
             opcode & 0x0F00 >> 8,
             opcode & 0x00F0 >> 4
         );
+        let x = (opcode & 0x0F00 >> 8) as usize;
+        let y = (opcode & opcode & 0x00F0 >> 4) as usize;
+        if cpu.V[x] == cpu.V[y] {
+            cpu.pc += 4;
+        } else {
+            cpu.pc += 2;
+        }
     } else if let 0x6000 = code {
         println!("6XNN V{} = {}", opcode & 0x0F00 >> 8, opcode & 0x00FF);
         let x = (opcode & 0x0F00 >> 8) as usize;
@@ -38,6 +57,9 @@ pub fn decode_opcode(cpu: &mut CPU, opcode: u16) {
         cpu.pc += 2;
     } else if let 0x7000 = code {
         println!("7XNN V{} += {}", opcode & 0x0F00 >> 8, opcode & 0x00FF);
+        let x = (opcode & 0x0F00 >> 8) as usize;
+        cpu.V[x] += (opcode & 0x00FF) as u8;
+        cpu.pc += 2;
     } else if let 0x8000 = code {
         let code = opcode & 0x000F;
         let X = opcode & 0x0F00 >> 8;
@@ -86,6 +108,12 @@ pub fn decode_opcode(cpu: &mut CPU, opcode: u16) {
             opcode & 0x00F0 >> 4,
             opcode & 0x000F
         );
+        cpu.draw(
+            (opcode & 0x0F00 >> 8) as u8,
+            (opcode & 0x00F0 >> 4) as u8,
+            (opcode & 0x000F) as u8,
+        );
+        cpu.pc += 2;
     } else if let 0xE000 = code {
         let code = opcode & 0x000F;
         if let 0x000E = code {
@@ -113,6 +141,8 @@ pub fn decode_opcode(cpu: &mut CPU, opcode: u16) {
             println!("FX55 reg_dump(V{}, &I)", opcode & 0x0F00 >> 8);
         } else if let 0x0065 = code {
             println!("FX65 reg_load(V{}, &I)", opcode & 0x0F00 >> 8);
+        } else {
+            panic!("Unknown opcode {:#06x}", opcode);
         }
     } else {
         panic!("Unknown opcode {:#06x}", opcode);

@@ -38,7 +38,7 @@ fn main() -> Result<(), String> {
     // Defining memory etc.
     let mut cpu = chip8::CPU::new();
     cpu.initialize();
-    cpu.load_program("picture.ch8");
+    cpu.load_program("test_opcode.ch8");
 
     let mut event_pump = sdl_context.event_pump()?;
     'running: loop {
@@ -59,7 +59,7 @@ fn main() -> Result<(), String> {
                     for x in 0..64 {
                         let tex_offset = y * pitch + x * 3;
                         let gfx_offset = y * pitch / 3 + x;
-                        let val = cpu.gfx[gfx_offset];
+                        let val = if cpu.gfx[gfx_offset] == 1 { 255 } else { 0 };
                         buffer[tex_offset] = val;
                         buffer[tex_offset + 1] = val;
                         buffer[tex_offset + 2] = val;

@@ -1,5 +1,25 @@
 use std::fs;
 mod instructions;
+
+static FONT_SET: [u8; 80] = [
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80, // F
+];
+
 pub struct CPU {
     opcode: u16,
     memory: [u8; 4096],
@@ -63,11 +83,15 @@ impl CPU {
         self.I = 0;
         self.sp = 0;
 
+        //Copy font set
+        for (i, &v) in FONT_SET.iter().enumerate() {
+            self.memory[0x50 + i] = v;
+        }
         //Filling with text gradient
 
-        for i in 0..(64 * 32) {
-            self.gfx[i] = (i as f64 / (64.0 * 32.0) * 255.0) as u8;
-        }
+        // for i in 0..(64 * 32) {
+        //     self.gfx[i] = (i as f64 / (64.0 * 32.0) * 255.0) as u8;
+        // }
     }
     pub fn emulate_cycle(&mut self) {
         // Fetch opcode
@@ -92,6 +116,25 @@ impl CPU {
     // OPs
     pub fn clear_display(&mut self) {
         self.gfx.iter_mut().for_each(|m| *m = 0);
+        self.draw_flag = true;
+    }
+
+    pub fn draw(&mut self, x: u8, y: u8, height: u8) {
+        let width: u8 = 8;
+        for iy in 0..(height + 1) {
+            let mut set_VF = false;
+            let sprite_row: u8 = self.memory[(self.I + iy as u16) as usize];
+            for ix in 0..8 {
+                let idx = iy * 8 + ix;
+                let screen_val = self.gfx[idx as usize];
+                let sprite_val = sprite_row >> (7 - ix) & 1;
+                let new_val = sprite_val ^ screen_val;
+                if !set_VF && (screen_val == 1 && new_val == 0) {
+                    self.V[15] = 1;
+                }
+                self.gfx[idx as usize] = new_val;
+            }
+        }
         self.draw_flag = true;
     }
 }
