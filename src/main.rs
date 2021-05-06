@@ -53,7 +53,6 @@ fn main() -> Result<(), String> {
             }
         }
         cpu.emulate_cycle();
-
         if cpu.draw_flag {
             screen_texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
                 for y in 0..32 {
@@ -67,6 +66,7 @@ fn main() -> Result<(), String> {
                     }
                 }
             })?;
+            cpu.draw_flag = false;
         }
         canvas.clear();
         canvas.copy(&screen_texture, None, None)?;

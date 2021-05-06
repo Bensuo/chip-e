@@ -8,6 +8,8 @@ pub fn decode_opcode(cpu: &mut CPU, opcode: u16) {
     if let 0x0000 = code {
         if let 0x00E0 = opcode {
             println!("00E0 disp_clear()");
+            cpu.clear_display();
+            cpu.pc += 2;
         } else if let 0x00EE = opcode {
             println!("00EE return;");
         } else {
@@ -31,6 +33,9 @@ pub fn decode_opcode(cpu: &mut CPU, opcode: u16) {
         );
     } else if let 0x6000 = code {
         println!("6XNN V{} = {}", opcode & 0x0F00 >> 8, opcode & 0x00FF);
+        let x = (opcode & 0x0F00 >> 8) as usize;
+        cpu.V[x] = (opcode & 0x00FF) as u8;
+        cpu.pc += 2;
     } else if let 0x7000 = code {
         println!("7XNN V{} += {}", opcode & 0x0F00 >> 8, opcode & 0x00FF);
     } else if let 0x8000 = code {
@@ -64,6 +69,8 @@ pub fn decode_opcode(cpu: &mut CPU, opcode: u16) {
         );
     } else if let 0xA000 = code {
         println!("ANNN I = {}", opcode & 0x0FFF);
+        cpu.I = opcode & 0x0FFF;
+        cpu.pc += 2;
     } else if let 0xB000 = code {
         println!("BNNN PC = V0 + {}", opcode & 0x00FF);
     } else if let 0xC000 = code {

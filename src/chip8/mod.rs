@@ -88,4 +88,10 @@ impl CPU {
         // self.pc += 2;
     }
     pub fn set_keys() {}
+
+    // OPs
+    pub fn clear_display(&mut self) {
+        self.gfx.iter_mut().for_each(|m| *m = 0);
+        self.draw_flag = true;
+    }
 }
