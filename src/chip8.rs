@@ -71,7 +71,7 @@ impl CPU {
         }
     }
     pub fn load_program(&mut self, fname: &str) {
-        let bytes = fs::read(fname).expect("Something went wrong");
+        let bytes = fs::read(fname).expect("Error: Couldn't open file");
         for (i, &val) in bytes.iter().enumerate() {
             self.memory[0x200 + i] = val;
         }
