@@ -38,7 +38,7 @@ fn main() -> Result<(), String> {
     // Defining memory etc.
     let mut cpu = chip8::CPU::new();
     cpu.initialize();
-    cpu.load_program("test_opcode.ch8");
+    cpu.load_program("roms/test_opcode.ch8");
 
     let mut event_pump = sdl_context.event_pump()?;
     'running: loop {
