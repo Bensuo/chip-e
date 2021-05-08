@@ -71,6 +71,7 @@ fn main() -> Result<(), String> {
         canvas.clear();
         canvas.copy(&screen_texture, None, None)?;
         canvas.present();
+        // std::thread::sleep(std::time::Duration::from_millis(100));
     }
 
     return Ok(());

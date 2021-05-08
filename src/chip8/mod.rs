@@ -109,7 +109,7 @@ impl CPU {
             }
             self.sound_timer -= 1;
         }
-        // self.pc += 2;
+        // self.pc += 2;6
     }
     pub fn set_keys() {}
 
@@ -120,21 +120,22 @@ impl CPU {
     }
 
     pub fn draw(&mut self, x: u8, y: u8, height: u8) {
-        let width: u8 = 8;
-        for iy in 0..(height + 1) {
-            let mut set_VF = false;
+        let mut set_vf = false;
+        for iy in 0..(height as usize) {
             let sprite_row: u8 = self.memory[(self.I + iy as u16) as usize];
-            for ix in 0..8 {
-                let idx = iy * 8 + ix;
-                let screen_val = self.gfx[idx as usize];
+            // println!("Sprite row: {:08b}", sprite_row);
+            for ix in 0..8 as usize {
+                let idx = (iy + y as usize) * 64 + ix + x as usize;
+                let screen_val = self.gfx[idx];
                 let sprite_val = sprite_row >> (7 - ix) & 1;
                 let new_val = sprite_val ^ screen_val;
-                if !set_VF && (screen_val == 1 && new_val == 0) {
-                    self.V[15] = 1;
+                if !set_vf && new_val == 0 && screen_val == 1 {
+                    set_vf = true;
                 }
-                self.gfx[idx as usize] = new_val;
+                self.gfx[idx] = new_val;
             }
         }
+        self.V[15] = if set_vf { 1 } else { 0 };
         self.draw_flag = true;
     }
 }
