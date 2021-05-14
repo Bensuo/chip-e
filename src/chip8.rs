@@ -1,6 +1,26 @@
 use std::fs;
 mod instructions;
 
+#[derive(Copy, Clone)]
+pub enum ChipKey {
+    K0,
+    K1,
+    K2,
+    K3,
+    K4,
+    K5,
+    K6,
+    K7,
+    K8,
+    K9,
+    KA,
+    KB,
+    KC,
+    KD,
+    KE,
+    KF,
+}
+
 static FONT_SET: [u8; 80] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -20,6 +40,11 @@ static FONT_SET: [u8; 80] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
+enum CpuState {
+    Executing,
+    WaitingForKey { x: usize },
+}
+
 pub struct CPU {
     opcode: u16,
     memory: [u8; 4096],
@@ -33,6 +58,7 @@ pub struct CPU {
     sp: u16,
     key: [u8; 16],
     pub draw_flag: bool,
+    state: CpuState,
 }
 
 pub fn dump_opcodes(cpu: &mut CPU) {
@@ -68,6 +94,7 @@ impl CPU {
             sp: 0,
             key: [0; 16],
             draw_flag: false,
+            state: CpuState::Executing,
         }
     }
     pub fn load_program(&mut self, fname: &str) {
@@ -87,18 +114,21 @@ impl CPU {
         for (i, &v) in FONT_SET.iter().enumerate() {
             self.memory[0x50 + i] = v;
         }
-        //Filling with text gradient
-
-        // for i in 0..(64 * 32) {
-        //     self.gfx[i] = (i as f64 / (64.0 * 32.0) * 255.0) as u8;
-        // }
     }
     pub fn emulate_cycle(&mut self) {
-        // Fetch opcode
-        self.opcode = read_mem_word(&self.memory, self.pc);
-        // Decode opcode
-        instructions::decode_opcode(self, self.opcode);
-        // Execute opcode
+        match self.state {
+            CpuState::Executing => {
+                // Fetch opcode
+                self.opcode = read_mem_word(&self.memory, self.pc);
+                // Decode opcode
+                instructions::decode_opcode(self, self.opcode);
+                // Execute opcode
+            }
+            _ => {}
+        }
+    }
+
+    pub fn update_timers(&mut self) {
         //Update timers
         if self.delay_timer > 0 {
             self.delay_timer -= 1;
@@ -109,10 +139,21 @@ impl CPU {
             }
             self.sound_timer -= 1;
         }
-        // self.pc += 2;6
     }
-    pub fn set_keys() {}
 
+    pub fn wait_for_key(&mut self, out_reg: u16) {
+        self.state = CpuState::WaitingForKey {
+            x: out_reg as usize,
+        };
+    }
+    pub fn handle_key_event(&mut self, key: ChipKey, is_pressed: bool) {
+        let val = if is_pressed { 1 } else { 0 };
+        self.key[key as usize] = val;
+        if let CpuState::WaitingForKey { x } = self.state {
+            self.V[x] = key as u8;
+            self.state = CpuState::Executing;
+        }
+    }
     // OPs
     pub fn clear_display(&mut self) {
         self.gfx.iter_mut().for_each(|m| *m = 0);
@@ -120,11 +161,18 @@ impl CPU {
     }
 
     pub fn draw(&mut self, x: u8, y: u8, height: u8) {
+        let x = x % 64;
+        let y = y % 32;
         let mut set_vf = false;
         for iy in 0..(height as usize) {
+            if y as usize + iy >= 32 {
+                break;
+            }
             let sprite_row: u8 = self.memory[(self.I + iy as u16) as usize];
-            // println!("Sprite row: {:08b}", sprite_row);
             for ix in 0..8 as usize {
+                if x as usize + ix >= 64 {
+                    break;
+                }
                 let idx = (iy + y as usize) * 64 + ix + x as usize;
                 let screen_val = self.gfx[idx];
                 let sprite_val = sprite_row >> (7 - ix) & 1;

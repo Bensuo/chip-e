@@ -177,14 +177,14 @@ pub fn decode_opcode(cpu: &mut CPU, opcode: u16) {
         let x = (opcode & 0x0F00) >> 8;
         if let 0x000E = code {
             debug_log!("EX9E if(key() == V{}", (opcode & 0x0F00) >> 8);
-            if cpu.V[x as usize] != 0 {
+            if cpu.key[cpu.V[x as usize] as usize] != 0 {
                 cpu.pc += 4;
             } else {
                 cpu.pc += 2;
             }
         } else if let 0x0001 = code {
             debug_log!("EXA1 if(key() != V{}", (opcode & 0x0F00) >> 8);
-            if cpu.V[x as usize] == 0 {
+            if cpu.key[cpu.V[x as usize] as usize] == 0 {
                 cpu.pc += 4;
             } else {
                 cpu.pc += 2;
@@ -199,6 +199,8 @@ pub fn decode_opcode(cpu: &mut CPU, opcode: u16) {
             cpu.pc += 2;
         } else if let 0x000A = code {
             debug_log!("FX0A V{} = get_key()", x);
+            cpu.wait_for_key(x);
+            cpu.pc += 2;
         } else if let 0x0015 = code {
             debug_log!("FX15 delay_timer(V{})", x);
             cpu.delay_timer = cpu.V[x as usize];
