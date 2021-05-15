@@ -7,8 +7,6 @@ mod chip8;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::PixelFormatEnum;
-use std::convert::TryInto;
-use std::time::Duration;
 use std::time::Instant;
 const IPS_CAP: u128 = 700;
 const TIMER_CAP: u128 = 60;
@@ -42,7 +40,6 @@ fn main() -> Result<(), String> {
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut frame_start = Instant::now();
-    let mut frame_end;
     let mut frame_time;
     let mut timer_counter = 0;
     let mut frame_accumulator = 0;
@@ -99,20 +96,14 @@ fn main() -> Result<(), String> {
         }
         // Check the frame time, if it's too fast then spin until we reach IPS_CAP
         // Sleep seems very inaccurate, rounding to 1ms maybe?
-        frame_end = Instant::now();
-        frame_time = (frame_end - frame_start).as_nanos();
+        frame_time = frame_start.elapsed().as_nanos();
         if frame_time < CPU_NS_PER_FRAME {
-            // std::thread::sleep(Duration::from_nanos(
-            //     (CPU_NS_PER_FRAME - frame_time).try_into().unwrap(),
-            // ));
-            while frame_time < CPU_NS_PER_FRAME {
-                frame_end = Instant::now();
-                frame_time = (frame_end - frame_start).as_nanos();
+            while frame_start.elapsed().as_nanos() < CPU_NS_PER_FRAME {
+                std::thread::yield_now();
             }
         }
         //Frame has really ended, get the new time and update some counters/print fps
-        frame_end = Instant::now();
-        frame_time = (frame_end - frame_start).as_nanos();
+        frame_time = frame_start.elapsed().as_nanos();
         timer_counter += frame_time;
         if frame_count >= IPS_CAP {
             println!(
@@ -126,7 +117,7 @@ fn main() -> Result<(), String> {
             frame_count += 1;
             frame_accumulator += frame_time;
         }
-        frame_start = frame_end;
+        frame_start = Instant::now();
     }
 
     return Ok(());

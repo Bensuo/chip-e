@@ -45,6 +45,7 @@ enum CpuState {
     WaitingForKey { x: usize },
 }
 
+#[allow(non_snake_case)]
 pub struct CPU {
     opcode: u16,
     memory: [u8; 4096],
@@ -61,6 +62,7 @@ pub struct CPU {
     state: CpuState,
 }
 
+#[allow(dead_code)]
 pub fn dump_opcodes(cpu: &mut CPU) {
     let pc: u16 = 0x200;
 
